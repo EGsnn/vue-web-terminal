@@ -1,13 +1,16 @@
 <template>
   <div id="app">
-
+    <em>1111</em>
+    <em>2222</em>
+    <em>3333</em>
+<!-- 
     <div style="width: 700px;height: 400px;margin-left: 150px;margin-top: 300px">
       <terminal
           name="test"
           show-header
           @exec-cmd="onExecCmd">
       </terminal>
-    </div>
+    </div> -->
 
     <div v-for="(item,i) in terminals" :key="i">
       <terminal
@@ -17,6 +20,7 @@
           :context="item.context"
           :warn-log-count-limit="200"
           :drag-conf="item.dragConf"
+          :toolsCmdList="['clear', 'loop', 'code', 'json', 'code', 'code']"
           show-header
           :push-message-before="_pushMessageBefore"
           @exec-cmd="onExecCmd"
@@ -55,6 +59,25 @@ export default {
         }
       ]
     }
+  },
+  created(){
+
+    // setTimeout(()=>{
+    //   TerminalApi.execute('terminal-test', 'clear')
+    // }, 5000)
+
+    // let message = {
+    //     // tag: 'output',
+    //     class: 'system',
+    //     tag: ' car output',
+    //     // color: '#f0f0f0',
+    //     // tag: '车端返回：',
+    //     contentStyle: {'color': '#ff0000'},
+    //     content: 'code'
+    // }
+    // setTimeout(()=>{
+    //   TerminalApi.pushMessage('terminal-test', message)
+    // }, 3000)
   },
   methods: {
     onExecCmd(key, command, success, failed, name) {
@@ -187,8 +210,8 @@ export default {
         }
       })
     },
-    _pushMessageBefore(message, name) {
-      console.log(message, name)
+    _pushMessageBefore() {
+      // console.log(message, name)
     }
   }
 }

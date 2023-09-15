@@ -15,11 +15,12 @@ import {
     _nonEmpty,
     _openUrl,
     _pointInRect,
-    _unHtml
+    _unHtml,
+    markKeywords
 } from "./js/Util.js";
-import historyStore from "@/js/HistoryStore.js";
-import TerminalFlash from "@/js/TerminalFlash.js";
-import TerminalAsk from "@/js/TerminalAsk";
+import historyStore from "./js/HistoryStore.js";
+import TerminalFlash from "./js/TerminalFlash.js";
+import TerminalAsk from "./js/TerminalAsk";
 import {
     dragging,
     elementInfo,
@@ -34,7 +35,7 @@ import {
     textEditorOpen,
     unregister
 } from './js/TerminalInterface';
-import {terminalProps} from "@/js/TerminalAttribute";
+import { terminalProps } from "@/js/TerminalAttribute";
 import THeader from "@/components/THeader.vue";
 import TViewJson from "@/components/TViewJson.vue";
 import TViewNormal from "@/components/TViewNormal.vue";
@@ -42,8 +43,8 @@ import TViewCode from "@/components/TViewCode.vue";
 import TViewTable from "@/components/TViewTable.vue";
 import THelpBox from "@/components/THelpBox.vue";
 import TEditor from "@/components/TEditor.vue";
-import {DEFAULT_COMMANDS, MESSAGE_CLASS, MESSAGE_TYPE} from "@/js/Configuration";
-import {_parseANSI} from "@/js/ansi/ANSI";
+import { DEFAULT_COMMANDS, MESSAGE_CLASS, MESSAGE_TYPE } from "@/js/Configuration";
+import { _parseANSI } from "@/js/ansi/ANSI";
 
 let idx = 0;
 
@@ -54,7 +55,7 @@ function generateTerminalName() {
 
 export default {
     name: 'Terminal',
-    components: {THelpBox, TViewNormal, THeader, TViewJson, TViewCode, TViewTable, TEditor},
+    components: { THelpBox, TViewNormal, THeader, TViewJson, TViewCode, TViewTable, TEditor },
     data() {
         return {
             command: "",
@@ -115,11 +116,28 @@ export default {
                     this.textEditor.focus = false
                 }
             },
-            containerStyleStore: null
+            containerStyleStore: null,
+            terminalWindowEle: null,
+            searchText: '',
+            findEleArr: null,
+            scroll: "",
+            index: 1,
+            query: "",
+            preQuery: "",
+            indexNum: 0,
+            findTextNum: 0,
+            main: null,
+            showArr: [],
+            showIndex: 0,
         }
     },
     props: terminalProps(),
     mounted() {
+        // console.log(document.getElementsByClassName('t-window'))
+        // markKeywords('test', document.getElementsByClassName('t-window')[0])
+
+
+
         this.$emit('init-before', this.getName())
 
         this._initContainerStyle()
@@ -147,6 +165,10 @@ export default {
             if (container && container.getBoundingClientRect && _pointInRect(e, container.getBoundingClientRect())) {
                 activeCursor = _isParentDom(e.target, container, "t-container")
                     || (e.target && e.target.classList.contains('t-text-editor-floor-btn'))
+                let isTool = e.target && e.target.classList.contains('blur-terminal')
+                if (isTool) {
+                    activeCursor = false
+                }
             }
             if (this._isBlockCommandFocus()) {
                 this.cursorConf.show = false
@@ -178,6 +200,13 @@ export default {
                 }
 
                 this.$emit('on-keydown', event, this.getName())
+            }
+            if(this.toolsCmdList && event.key.length == 2 && event.key.indexOf('F') === 0) {
+                let index = parseInt(event.key.replace('F', ''))
+                if(index<=this.toolsCmdList.length && index<=6) {
+                    this.execute(this.toolsCmdList[index-1])
+                }
+                // console.log('keydown', parseInt(event.key.replace('F', '')))
             }
         });
 
@@ -311,6 +340,7 @@ export default {
             }
         })
         this.$emit('init-complete', this.getName())
+        this.terminalWindowEle = document.getElementById('terminal-window-' + this.getName())
     },
     destroyed() {
         this.$emit('destroyed', this.getName())
@@ -339,6 +369,231 @@ export default {
         }
     },
     methods: {
+        findKeyWord(keyText) {
+            if (!keyText) return;
+            if (!this.findEleArr) {
+                this.findEleArr = [...document.getElementsByClassName('t-content-normal')]
+            }
+            this.findEleArr.map(item => {
+                markKeywords(keyText, item)
+            })
+        },
+        search() {
+            // console.log('this.terminalLog=', this.terminalLog)
+            this.findTextNum = 0;
+            this.indexNum = 0;
+            this.query = this.searchText;
+            // let main = document.querySelector(".container");
+            // let main = this.main || document.querySelector(".t-window");
+            // let innerHTML = main.innerHTML;
+            // // 每次搜索之前都需要将em替换回来，不然就会出现em里面套em的情况而导致em数量一直叠加
+            // let emReg1 = new RegExp('<em style="background-color: yellow">', "g");
+            // innerHTML = innerHTML.replace(emReg1, "");
+            // let emReg2 = new RegExp("</em>", "g");
+            // innerHTML = innerHTML.replace(emReg2, "");
+            // let emReg3 = new RegExp(
+            //     '<strong style="background-color: #ff9632">',
+            //     "g"
+            // );
+            // innerHTML = innerHTML.replace(emReg3, "");
+            // let emReg4 = new RegExp("</strong>", "g");
+            // innerHTML = innerHTML.replace(emReg4, "");
+            // main.innerHTML = innerHTML;
+            // 设置本次搜索背景色
+            if (this.searchText != "") {
+                // console.log(this.searchText);
+                // (?![^<>]*>)(\d+)1(?![^<>]*>)
+                // var regex = new RegExp(`(?![^<>]*>)${this.searchText}[^<>]*>)`, 'g');
+
+                // let reg = new RegExp('$--text--$', "g");
+
+                    
+                // if (!this.findEleArr) {
+                    // }
+                this.findEleArr = [...document.getElementsByClassName('t-content-normal')]
+
+                this.findEleArr.map(item => {
+                    // markKeywords(keyText, item)
+                    this.replaceNonTagCustomText(item, this.searchText)
+                })
+
+                // innerHTML=this.replaceNonTagCustomText(innerHTML, this.searchText)
+                 
+
+                // // console.log(innerHTML)
+                // innerHTML = innerHTML.replace(
+                //     /\$--text--\$/g,
+                //     '<em style="background-color: yellow">' + this.searchText + "</em>"
+                // );
+                // console.log(innerHTML)
+            } else {
+                this.findEleArr = [...document.getElementsByClassName('t-content-normal')]
+
+                this.findEleArr.map(eleObj => {
+                    // markKeywords(keyText, item)
+                    let innerHTML = eleObj.innerHTML;
+          
+                    // 每次搜索之前都需要将em替换回来，不然就会出现em里面套em的情况而导致em数量一直叠加
+                    let emReg1 = new RegExp('<em style="background-color: yellow">', "g");
+                    innerHTML = innerHTML.replace(emReg1, "");
+                    let emReg2 = new RegExp("</em>", "g");
+                    innerHTML = innerHTML.replace(emReg2, "");
+                    let emReg3 = new RegExp(
+                        '<strong style="background-color: #ff9632">',
+                        "g"
+                    );
+                    innerHTML = innerHTML.replace(emReg3, "");
+                    let emReg4 = new RegExp("</strong>", "g");
+                    innerHTML = innerHTML.replace(emReg4, "");
+                    // 创建一个虚拟的div元素
+                    eleObj.innerHTML = innerHTML
+                })
+            }
+            // 替换配置
+            // main.innerHTML = innerHTML;
+            this.getSearchList();
+        },
+        replaceNonTagCustomText(eleObj, customText) {
+            let innerHTML = eleObj.innerHTML;
+          
+            // 每次搜索之前都需要将em替换回来，不然就会出现em里面套em的情况而导致em数量一直叠加
+            let emReg1 = new RegExp('<em style="background-color: yellow">', "g");
+            innerHTML = innerHTML.replace(emReg1, "");
+            let emReg2 = new RegExp("</em>", "g");
+            innerHTML = innerHTML.replace(emReg2, "");
+            let emReg3 = new RegExp(
+                '<strong style="background-color: #ff9632">',
+                "g"
+            );
+            innerHTML = innerHTML.replace(emReg3, "");
+            let emReg4 = new RegExp("</strong>", "g");
+            innerHTML = innerHTML.replace(emReg4, "");
+            // 创建一个虚拟的div元素
+            var div = document.createElement('div');
+            div.innerHTML = innerHTML
+
+            // 遍历所有的文本节点，匹配并替换自定义文字
+            var textNodes = this.getTextNodes(div);
+            textNodes.forEach((node) => {
+                var text = node.nodeValue;
+                let reg = new RegExp(`(${customText})`, 'gi')
+                //   var replacedText = text.replace(reg, '$--text--$');
+                var replacedText = text.replace(reg, '$--before--$1--end--$');
+                node.nodeValue = replacedText;
+            });
+            eleObj.innerHTML = div.innerHTML.replace(
+                /\$--before--/g,
+                '<em style="background-color: yellow">'
+            ).replace(
+                /--end--\$/g,
+                '</em>'
+            )
+        },
+        getTextNodes(element) {
+            var textNodes = [];
+          
+            function traverse(element) {
+              for (var node = element.firstChild; node; node = node.nextSibling) {
+                if (node.nodeType === Node.TEXT_NODE) {
+                  textNodes.push(node);
+                } else if (node.nodeType === Node.ELEMENT_NODE) {
+                  traverse(node);
+                }
+              }
+            }
+          
+            traverse(element);
+            return textNodes;
+        },
+        getSearchCount() {
+            // em标签都是被替换的 所以em标签的数量就是搜索到关键字的数量
+            let num = this.terminalWindowEle.getElementsByTagName("em").length;
+            this.findTextNum = num;
+        },
+        getSearchList() {
+            // em标签都是被替换的 所以em标签的数量就是搜索到关键字的数量
+            let _ele =  this.terminalWindowEle.getElementsByTagName("em")
+            let num = _ele.length;
+            this.findTextNum = num;
+            console.log(this.findTextNum)
+            if (num != 0) {
+                // 使用.style.background会出现em删不掉会一直叠加的情况 因此只能替换innerHTML
+                _ele[0].innerHTML =
+                    '<strong style="background-color: #ff9632">' +
+                    _ele[0].innerText +
+                    "</strong>";
+                // 滚动到第一个关键字位置
+                _ele[0].scrollIntoView({
+                    block: "start",
+                    behavior: "smooth",
+                });
+                // 因为搜索遮挡了40px 因此需要往上移动40px
+                document.documentElement.scrollTop -= 50;
+            }
+        },
+        dataScroll () {
+            this.scroll =
+                document.documentElement.scrollTop || document.body.scrollTop;
+        },
+        // 用循环的方式将每个标题离顶部的距离与滚动条当前位置对比来确定哪个标题需要变为高亮
+        loadScroll () {
+            var self = this;
+            var sections = document.getElementsByTagName("h3");
+            for (var i = sections.length - 1; i >= 0; i--) {
+                if (self.scroll + 50 >= sections[i].offsetTop) {
+                    //所有的标题都是h3标签，因此可以使用i来进行定位内容对应的目录位置，从而设置样式
+                    //   31460 31099  31059 30702
+                    // console.log(self.scroll, sections[i].offsetTop);
+                    this.index = sections[i].id;
+                    break;
+                }
+            }
+        },
+        // 下一个
+        next() {
+            if (this.findTextNum != 0) {
+                let _ele = this.terminalWindowEle.getElementsByTagName("em")
+
+                for (let i = 0; i < _ele.length; i++) {
+                    _ele[i].innerHTML = _ele[i].innerText;
+                }
+                if (this.indexNum == this.findTextNum - 1) {
+                    this.indexNum = 0;
+                } else {
+                    this.indexNum = this.indexNum + 1;
+                }
+                _ele[this.indexNum].innerHTML =
+                    '<strong style="background-color: #ff9632">' +
+                    _ele[this.indexNum].innerText +
+                    "</strong>";
+                // _ele[this.indexNum].scrollIntoView({
+                //     block: "start",
+                //     behavior: "smooth",
+                // });
+                _ele[this.indexNum].scrollIntoView();
+                document.documentElement.scrollTop -= 50;
+            }
+        },
+        // 上一个
+        prev() {
+            if (this.findTextNum != 0) {
+                let _ele = this.terminalWindowEle.getElementsByTagName("em")
+                for (let i = 0; i < _ele.length; i++) {
+                    _ele[i].innerHTML = _ele[i].innerText;
+                }
+                if (this.indexNum == 0) {
+                    this.indexNum = this.findTextNum - 1;
+                } else {
+                    this.indexNum = this.indexNum - 1;
+                }
+                _ele[this.indexNum].innerHTML =
+                    '<strong style="background-color: #ff9632">' +
+                    _ele[this.indexNum].innerText +
+                    "</strong>";
+                _ele[this.indexNum].scrollIntoView();
+                document.documentElement.scrollTop -= 50;
+            }
+        },
         pushMessage(message) {
             pushMessage(this.getName(), message);
         },
@@ -352,7 +607,14 @@ export default {
             return dragging(this.getName(), options);
         },
         execute(options) {
-            return execute(this.getName(), options);
+            // console.log('execute=', options)
+            if(options ==='clear') {
+                if(window.confirm("是否清空当前窗口信息？")) {
+                    return execute(this.getName(), options);
+                }
+            } else {
+                return execute(this.getName(), options);
+            }
         },
         focus() {
             return focus(this.getName());
@@ -576,9 +838,11 @@ export default {
             })
         },
         _execute() {
+
             this._resetSearchKey()
             this._saveCurCommand();
             if (_nonEmpty(this.command)) {
+                // console.log('------this.command=', this.command)
                 try {
                     let split = this.command.split(" ")
                     let cmdKey = split[0];
@@ -675,6 +939,10 @@ export default {
             } else {
                 this.cursorConf.show = false
             }
+            setTimeout(()=>{
+                this.getSearchCount()
+            },120)
+           
             this.searchCmdResult.show = true
             this.searchCmdResult.defaultBoxRect = null
         },
@@ -715,7 +983,10 @@ export default {
          */
         _pushMessage(message, ignoreCheck = false) {
             if (message == null) return
+            // console.log('-----message=', message)
             if (message instanceof Array) return this._pushMessageBatch(message, ignoreCheck)
+      
+            // console.log(message)
 
             if (typeof message === 'string') {
                 message = {
@@ -733,10 +1004,12 @@ export default {
             if (!ignoreCheck) {
                 this._checkTerminalLog()
             }
+            this.getSearchCount()
 
             if (message.type === MESSAGE_TYPE.JSON) {
                 setTimeout(() => {
                     this._jumpToBottom()
+
                 }, 80)
             }
         },
@@ -758,8 +1031,9 @@ export default {
         _jumpToBottom() {
             this.$nextTick(() => {
                 let box = this.$refs.terminalWindow
+                // console.log('box is null', box)
                 if (box != null) {
-                    box.scrollTo({top: box.scrollHeight, behavior: this.scrollMode})
+                    box.scrollTo({ top: box.scrollHeight, behavior: this.scrollMode })
                 }
             })
         },
@@ -820,7 +1094,7 @@ export default {
 
             let lineWidth = this.$refs.terminalInputBox.getBoundingClientRect().width
 
-            let pos = {left: 0, top: 0}
+            let pos = { left: 0, top: 0 }
             //  当前字符长度
             let charWidth = this.cursorConf.defaultWidth
             //  前一个字符的长度
@@ -1191,9 +1465,9 @@ export default {
         _getPosition() {
             if (this._draggable()) {
                 let box = this.$refs.terminalContainer
-                return {x: parseInt(box.style.left), y: parseInt(box.style.top)}
+                return { x: parseInt(box.style.left), y: parseInt(box.style.top) }
             } else {
-                return {x: 0, y: 0}
+                return { x: 0, y: 0 }
             }
         },
         _onAskInput() {

@@ -1,4 +1,4 @@
-import {MESSAGE_CLASS, MESSAGE_TYPE} from "@/js/Configuration";
+import {MESSAGE_CLASS, MESSAGE_TYPE} from "./Configuration";
 
 /**
  * 将空格、回车、Tab转译为html
@@ -289,3 +289,20 @@ export function _isPad() {
     }
     return _screenType().sm
 }
+
+export function markKeywords( keywords,  domObj) {
+    const dom = domObj
+    // const type = 'text'
+    // const { dom, type } = domObj;
+    let updateList = [];
+    let newText = dom.innerText.replace(
+        keywords,
+        `<span style="background-color: #169fe6; color: #ffffff;">${keywords}</span>`
+    );
+
+
+    if (newText) {
+        dom.innerHTML = newText;
+    }
+    return updateList;
+  }

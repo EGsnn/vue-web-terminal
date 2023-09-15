@@ -16,11 +16,13 @@ export function terminalViewerProps() {
                     class: null,
                     type: 'normal',
                     content: null,
-                    tag: null
+                    tag: null,
+                    contentStyle: null
                 }
             }
         },
-        idx: Number | String
+        idx: Number | String,
+        searchText: Number | String,
     }
 }
 
@@ -34,16 +36,20 @@ export function terminalProps() {
         //  初始化日志内容
         initLog: {
             type: Array, default: () => {
-                return [{
-                    type: 'normal',
-                    content: "Terminal Initializing ..."
-                }, {
-                    type: 'normal',
-                    content: "Current login time: " + new Date().toLocaleString()
-                }, {
-                    type: 'normal',
-                    content: "Welcome to vue web terminal! If you are using for the first time, you can use the <span class='t-cmd-key'>help</span> command to learn.Thanks for your star support: <a class='t-a' target='_blank' href='https://github.com/tzfun/vue-web-terminal'>https://github.com/tzfun/vue-web-terminal</a>"
-                }]
+                return [
+                //     {
+                //     type: 'normal',
+                //     content: "Terminal Initializing ..."
+                // }, 
+                // {
+                //     type: 'normal',
+                //     content: "Current login time: " + new Date().toLocaleString()
+                // },
+                //  {
+                //     type: 'normal',
+                //     content: "Welcome to vue web terminal! If you are using for the first time, you can use the <span class='t-cmd-key'>help</span> command to learn.Thanks for your star support: <a class='t-a' target='_blank' href='https://github.com/tzfun/vue-web-terminal'>https://github.com/tzfun/vue-web-terminal</a>"
+                // }
+                ]
             }
         },
         //  上下文
@@ -135,6 +141,10 @@ export function terminalProps() {
         scrollMode: {
             type: String,
             default: 'smooth'
+        },
+        // 工具栏快捷命令
+        toolsCmdList: {
+            type: Array
         },
         /**
          * 在 push 消息之前触发的钩子函数，只能对message对象的属性进行修改
