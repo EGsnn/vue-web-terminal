@@ -124,11 +124,11 @@
     cursor: text;
 }
 
-.t-window .prompt:before {
+/* .t-window .prompt:before {
     content: "$";
     margin-right: 10px;
     word-wrap: break-word;
-}
+} */
 
 .t-window p {
     overflow-wrap: break-word;
@@ -148,8 +148,8 @@
     }
 }
 
-.t-window .cursor {
-    background-color: #fff;
+.cursor {
+    background-color: #333;
     animation: cursor-flash 1s infinite;
     -webkit-animation: cursor-flash 1s infinite;
     -o-animation: cursor-flash 1s infinite;
@@ -163,6 +163,7 @@
     border: none;
     max-width: 300px;
     color: white;
+    color: red;
     background: none;
     outline: none;
     padding: 0;
@@ -440,6 +441,7 @@ pre {
     color: white;
     background-color: rgba(0, 0, 0, 0);
     border: none;
+    color: red;
     outline: none;
     margin-top: 10px;
     cursor: pointer;

@@ -42,43 +42,48 @@
             <div class="group cmd-btn-box">
               <button v-for="(item, index) in toolsCmdList" :key="item + index" @click="execute(item)">F{{index+1}}</button>
             </div>
-            <span class="terminal-log-count">共{{terminalLog.length}}行</span>
+            <span class="terminal-log-count">共{{terminalLog.length}}条</span>
 
           </div>
         </slot>
       </div>
-
-      <div class="t-window" :id="'terminal-window-' + getName()" :style="`${showHeader ? 'height:calc(100% - 74px);margin-top: 74px;' : 'height:100%'}`"
-           ref="terminalWindow" @click="_focus" @dblclick="_focus(true)">
+<!-- 
+      <div class="t-window" id="terminal-window" :style="`${showHeader ? 'height:calc(100% - 74px);margin-top: 74px;' : 'height:100%'}`"
+           ref="terminalWindow" @click="_focus" @dblclick="_focus(true)"> -->
+      <div class="t-window" id="terminal-window"  ref="terminalWindow" @click="_focus" @dblclick="_focus(true)">
         <div class="t-log-box" v-for="(item,idx) in terminalLog" v-bind:key="idx">
-          <span v-if="item.type === 'cmdLine'" class="t-crude-font t-cmd-line">
-              <span class="prompt t-cmd-line-content"><span v-html="item.content"></span></span>
-          </span>
-          <div v-else>
-            <span v-if="item.type === 'normal'">
-              <slot name="normal" :message="item">
-                <t-view-normal :item="item" :searchText="searchText"></t-view-normal>
-              </slot>
+          <div class="t-log-msg-box">
+            <span v-if="item.type === 'cmdLine'" class="t-crude-font t-cmd-line right-box">
+                <span class="prompt t-cmd-line-content"><span v-html="item.content"></span></span>
             </span>
-            <div v-else-if="item.type === 'json'">
-              <slot name="json" :message="item">
-                <t-view-json :item="item" :idx="idx"></t-view-json>
-              </slot>
-            </div>
-            <div v-else-if="item.type === 'code'">
-              <slot name="code" :message="item">
-                <t-view-code :item="item" :idx="idx"></t-view-code>
-              </slot>
-            </div>
-            <div v-else-if="item.type === 'table'">
-              <slot name="table" :message="item">
-                <t-view-table :item="item" :idx="idx"></t-view-table>
-              </slot>
-            </div>
-            <div v-else-if="item.type === 'html'">
-              <slot name="html" :message="item">
-                <div v-html="item.content"></div>
-              </slot>
+            <div class="msg-list-box" :ref="item.name" v-else>
+              <div class="left-box "  v-for="(childItem, idx1) in item.msgList" :key="idx1">
+                <span v-if="childItem.type === 'normal'">
+                  <slot name="normal" :message="childItem">
+                    <t-view-normal :item="childItem" :searchText="searchText"></t-view-normal>
+                  </slot>
+                </span>
+                <div v-else-if="childItem.type === 'json'">
+                  <slot name="json" :message="childItem">
+                    <t-view-json :item="childItem" :idx="idx"></t-view-json>
+                  </slot>
+                </div>
+                <div v-else-if="childItem.type === 'code'">
+                  <slot name="code" :message="childItem">
+                    <t-view-code :item="childItem" :idx="idx"></t-view-code>
+                  </slot>
+                </div>
+                <div v-else-if="childItem.type === 'table'">
+                  <slot name="table" :message="childItem">
+                    <t-view-table :item="childItem" :idx="idx"></t-view-table>
+                  </slot>
+                </div>
+                <div v-else-if="childItem.type === 'html'">
+                  <slot name="html" :message="childItem">
+                    <div v-html="childItem.content"></div>
+                  </slot>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -97,35 +102,40 @@
                  auto-complete="new-password"
                  @keyup.enter="_onAskInput">
         </div>
-        <p class="t-last-line t-crude-font t-cmd-line" ref="terminalInputBox" v-show="showInputLine">
-          <span class="prompt t-cmd-line-content t-disable-select" ref="terminalInputPrompt">
-            <span>{{ context }}</span>
-            <span> > </span>
-          </span><span class="t-cmd-line-content" v-html="_commandFormatter(command)"></span><span
-            v-show="cursorConf.show" class="cursor t-disable-select" ref="terminalCursor"
-            :style="`width:${cursorConf.width}px;left:${cursorConf.left};top:${cursorConf.top};`">&nbsp;</span>
-          <input type="text" autofocus="autofocus" v-model="command"
-                 class="t-cmd-input t-disable-select"
-                 ref="terminalCmdInput"
-                 autocomplete="off"
-                 auto-complete="new-password"
-                 @keydown="_onInputKeydown"
-                 @keyup="_onInputKeyup"
-                 @input="_onInput"
-                 @focusin="cursorConf.show = true"
-                 @keyup.up.exact="_switchPreCmd"
-                 @keyup.down.exact="_switchNextCmd"
-                 @keyup.enter="_execute">
-          <span class="t-flag t-cmd-line t-disable-select">
-            <span class="t-cmd-line-content" ref="terminalEnFlag">a</span>
-            <span class="t-cmd-line-content" ref="terminalCnFlag">你</span>
-          </span>
-        </p>
         <slot name="helpCmd" :item="searchCmdResult.item">
           <p class="t-help-msg">
             {{ searchCmdResult.item ? searchCmdResult.item.usage : '' }}
           </p>
         </slot>
+      </div>
+      <div class="cmd-input-box">
+        <!-- <p class="t-last-line t-crude-font t-cmd-line" ref="terminalInputBox" v-show="showInputLine"> -->
+        <p class="t-last-line t-crude-font t-cmd-line" ref="terminalInputBox">
+          <!-- <span class="prompt t-cmd-line-content t-disable-select" ref="terminalInputPrompt">
+            <span>{{ context }}</span>
+            <span> > </span>
+          </span> -->
+          <span class="t-cmd-line-content" v-html="_commandFormatter(command)"></span>
+          <span
+            v-show="cursorConf.show" class="cursor t-disable-select" ref="terminalCursor"
+            :style="`width:${cursorConf.width}px;left:${cursorConf.left};top:${cursorConf.top};`">&nbsp;</span>
+          <input type="text" autofocus="autofocus" v-model="command"
+                  class="t-cmd-input"
+                  ref="terminalCmdInput"
+                  autocomplete="off"
+                  auto-complete="new-password"
+                  @keydown="_onInputKeydown"
+                  @keyup="_onInputKeyup"
+                  @input="_onInput"
+                  @focusin="cursorConf.show = true"
+                  @keyup.up.exact="_switchPreCmd"
+                  @keyup.down.exact="_switchNextCmd"
+                  @keyup.enter="_execute">
+          <span class="t-flag t-cmd-line t-disable-select">
+            <span class="t-cmd-line-content" ref="terminalEnFlag">a</span>
+            <span class="t-cmd-line-content" ref="terminalCnFlag">你</span>
+          </span>
+        </p>
       </div>
 
     </div>
@@ -152,7 +162,84 @@ import TerminalJs from './Terminal.js'
 
 export default TerminalJs
 </script>
-<style scoped>
+
+<style scoped lang="scss">
+.terminal {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+.t-window {
+  background: #fff;
+  position: relative;
+  flex: 1;
+  // position: relative;
+  .t-log-box {
+    width: 100%;
+    .t-log-msg-box {
+      clear: both;
+      overflow: hidden;
+      // background: #aaa;
+      padding: 12px;
+    }
+    .msg-list-box {
+      background: rgba(59,130,246,.3);
+      width: max-content;
+      max-width: 80%;
+      border-radius: 12px;
+      overflow-y: auto;
+      max-height: 200px;
+      padding: 16px;
+    }
+    .left-box {
+      border-radius: 12px;
+      // background: #888;
+      // padding: 12px;
+      // width: max-content;
+      // max-width: 80%;
+      // background: red;
+      // float: left;
+    }
+    .right-box {
+      border-radius: 12px;
+      background: rgba(20, 108, 255, 0.5);
+      padding: 12px;
+      width: max-content;
+      float: right;
+    }
+  }
+  span {
+    // background: #000;
+    color: #000;
+  }
+}
+.cmd-input-box {
+  background: #fff;
+  border-top: 1px #eee solid;
+  padding: 12px;
+}
+.t-last-line {
+  height: 80px;
+  // padding: 12px;
+  box-sizing: border-box;
+  position: relative;
+  .t-cmd-line-content {
+    /deep/ .t-cmd-key {
+      color: #000;
+    }
+  }
+  .t-cmd-input-box {
+    width: 100%;
+    height: 100%;
+    padding: 0;
+    margin: 0;
+    border: none;
+    outline: none; // 去除选中状态边框
+    background-color: rgba(0, 0, 0, 0);// 透明背景
+    
+    // background: red;
+  }
+}
 .terminal-tools {
   height: 45px;
   background: #555;
@@ -167,6 +254,7 @@ export default TerminalJs
   gap: 16px;
   font-size: 14px;
 }
+
 .tools-box input,
 .tools-box button{
   background: #444;
@@ -179,30 +267,36 @@ export default TerminalJs
   border: 0;  
   outline: none; 
 }
+
 .tools-box input {
   width: 100px;
   color: #ddd;
 }
+
 .tools-box button{
   min-width: 30px;
   line-height: 30px;
   padding: 3px 0;
   box-sizing: border-box;
 }
+
 .tools-box button:hover {
   background: #333;
 }
+
 .group {
   border-radius: 5px;
   background: #333;
   overflow: hidden;
 }
+
 .group button{
   border-radius: 0;
   line-height: 30px;
   padding: 3px 0;
   box-sizing: border-box;
 }
+
 .serach-box {
   display: flex;
   align-items: center;

@@ -129,6 +129,7 @@ export default {
             main: null,
             showArr: [],
             showIndex: 0,
+            msgCount: 0, //
         }
     },
     props: terminalProps(),
@@ -340,7 +341,7 @@ export default {
             }
         })
         this.$emit('init-complete', this.getName())
-        this.terminalWindowEle = document.getElementById('terminal-window-' + this.getName())
+        this.terminalWindowEle = document.getElementById('terminal-window')
     },
     destroyed() {
         this.$emit('destroyed', this.getName())
@@ -349,8 +350,12 @@ export default {
         unregister(this.getName())
     },
     watch: {
-        terminalLog() {
-            this._jumpToBottom()
+        terminalLog: {
+            handler() {
+                this._jumpToBottom()
+            },
+            immediate: true,
+            deep: true
         },
         context: {
             handler() {
@@ -379,7 +384,7 @@ export default {
             })
         },
         search() {
-            // console.log('this.terminalLog=', this.terminalLog)
+            console.log('this.terminalLog=', this.terminalLog)
             this.findTextNum = 0;
             this.indexNum = 0;
             this.query = this.searchText;
@@ -515,7 +520,6 @@ export default {
             let _ele =  this.terminalWindowEle.getElementsByTagName("em")
             let num = _ele.length;
             this.findTextNum = num;
-            console.log(this.findTextNum)
             if (num != 0) {
                 // 使用.style.background会出现em删不掉会一直叠加的情况 因此只能替换innerHTML
                 _ele[0].innerHTML =
@@ -543,7 +547,7 @@ export default {
                 if (self.scroll + 50 >= sections[i].offsetTop) {
                     //所有的标题都是h3标签，因此可以使用i来进行定位内容对应的目录位置，从而设置样式
                     //   31460 31099  31059 30702
-                    // console.log(self.scroll, sections[i].offsetTop);
+                    console.log(self.scroll, sections[i].offsetTop);
                     this.index = sections[i].id;
                     break;
                 }
@@ -607,7 +611,7 @@ export default {
             return dragging(this.getName(), options);
         },
         execute(options) {
-            // console.log('execute=', options)
+            console.log('execute=', options)
             if(options ==='clear') {
                 if(window.confirm("是否清空当前窗口信息？")) {
                     return execute(this.getName(), options);
@@ -842,7 +846,7 @@ export default {
             this._resetSearchKey()
             this._saveCurCommand();
             if (_nonEmpty(this.command)) {
-                // console.log('------this.command=', this.command)
+                console.log('------this.command=1', `-${this.command}`)
                 try {
                     let split = this.command.split(" ")
                     let cmdKey = split[0];
@@ -1026,14 +1030,31 @@ export default {
             if (message.type !== MESSAGE_TYPE.CMD_LINE && this.pushMessageBefore) {
                 this.pushMessageBefore(message, this.getName())
             }
-            this.terminalLog.push(message)
+            if(this.terminalLog[this.terminalLog.length - 1].isMsgList) {
+                this.terminalLog[this.terminalLog.length - 1].msgList.push(message)
+            } else {
+                this.msgCount = this.msgCount + 1
+                this.terminalLog.push({
+                    type: 'msgList',
+                    name: 'tMsgBox' + this.msgCount,
+                    isMsgList: true,
+                    msgList: [message]
+                })
+                // this.terminalLog.push(message)
+            }
         },
         _jumpToBottom() {
             this.$nextTick(() => {
                 let box = this.$refs.terminalWindow
+                let msgBox = this.$refs['tMsgBox' + this.msgCount]
+                // console.log(box)
                 // console.log('box is null', box)
                 if (box != null) {
                     box.scrollTo({ top: box.scrollHeight, behavior: this.scrollMode })
+                }
+                if(msgBox && msgBox[0]) {
+                    // console.log( msgBox[0].scrollHeight)
+                    msgBox[0].scrollTo({ top: msgBox[0].scrollHeight, behavior: this.scrollMode })
                 }
             })
         },
@@ -1057,7 +1078,8 @@ export default {
 
             this.terminalLog.push({
                 type: "cmdLine",
-                content: `${this.context} > ${this._commandFormatter(this.command)}`
+                // content: `${this.context} > ${this._commandFormatter(this.command)}`
+                content: `${this._commandFormatter(this.command)}`
             });
         },
         _doClear(args) {
